@@ -1,8 +1,7 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - determined that a ditto method and logic wasn't needed
-# - added a test case for doing ditto by rolling your own comparison function
+# - replace use Modern::Perl with v5.18 in the Synopsis
 
 # To Do:
 # - croak if continue not called at the end of each iteration
@@ -18,16 +17,12 @@ ControlBreak - Compare values during iteration to detect changes
 
 =head1 SYNOPSIS
 
-    use Modern::Perl '2021';
-
-    # use feature 'signatures';
-    # no warnings 'experimental::signatures';
+    use v5.18;
 
     use ControlBreak;
 
     # set up two levels, in minor to major order
     my $cb = ControlBreak->new( qw( District Country ) );
-
 
     my $country_total = 0;
     my $district_total = 0;
