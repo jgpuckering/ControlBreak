@@ -1,7 +1,8 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - replace use Modern::Perl with v5.18 in the Synopsis
+# - replace use Modern::Perl with v5.18 in the code
+# - update POD Dependancies section
 
 # To Do:
 # - croak if continue not called at the end of each iteration
@@ -127,7 +128,9 @@ handle the very last data group; e.g. to print a final set of subtotals.
 ########################################################################
 # Libraries and Features
 ########################################################################
-use Modern::Perl '2021';
+use strict;
+use warnings;
+use v5.18;
 
 use Object::Pad 0.66 qw( :experimental(init_expr) );
 
@@ -135,8 +138,6 @@ package ControlBreak;
 class   ControlBreak 1.00;
 
 use Carp            qw(croak);
-use Scalar::Util    qw(dualvar);
-use DDP;
 
 # public attributes
 field $iteration    :reader     { 0 };  # [0] counts iterations
@@ -481,23 +482,17 @@ sub _op_to_func ($op) {
 1;
 
 __END__
-=head1 DEPENDENCIES
-
-Object::Pad
-
-=head1 BUGS AND LIMITATIONS
-
-None reported.
 
 =head1 AUTHOR
 
-Gary Puckering
-jgpuckering@rogers.com
+Gary Puckering <jgpuckering@rogers.com>
 
 =head1 LICENSE AND COPYRIGHT
 
 Copyright 2022, Gary Puckering
 
 This utility is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+See L<https://dev.perl.org/licenses/artistic.html>
 
 =cut
