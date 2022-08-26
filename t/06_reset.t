@@ -10,7 +10,6 @@ use FindBin;
 use lib $FindBin::Bin . '/../lib';
 
 use ControlBreak;
-use DDP; 
    
 my $cb = ControlBreak->new( 'City' );
 

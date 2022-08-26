@@ -9,9 +9,10 @@ use Test::More tests => 9;
 use FindBin;
 use lib $FindBin::Bin . '/../lib';
 
+use ControlBreak;
+
 use Data::Table;
 use Getopt::Long;
-use ControlBreak;
 
 my $verbose = 0;
 GetOptions( 'v' => \$verbose ) 

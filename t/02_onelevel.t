@@ -7,10 +7,9 @@ use v5.18;      # minimum needed for Object::Pad
 use Test::More tests => 26;
 
 use FindBin;
-use lib "$FindBin::Bin/../lib";
+use lib $FindBin::Bin . '/../lib';
 
 use ControlBreak;
-use DDP; 
    
 my $cb = ControlBreak->new( 'L1_alpha' );
 

@@ -10,7 +10,6 @@ use FindBin;
 use lib $FindBin::Bin . '/../lib';
 
 use Capture::Tiny ':all';
-use DDP;
 
 my ($stdout, $stdin, $exit) = capture {
     synopsis();
@@ -36,10 +35,7 @@ is $stdout, $expected;
 
 
 sub synopsis {
-    use Modern::Perl '2021';
-
-    # use feature 'signatures';
-    # no warnings 'experimental::signatures';
+    use v5.18;
 
     use lib $FindBin::Bin . '/../lib';
 
