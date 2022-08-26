@@ -8,7 +8,7 @@
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
 # - provide an is_break method that tests level for non-zero
 # - provide method control() as a synonym for test()
-# - consider getting rid of continue and doing it automatically in test
+# - consider adding an autocontinue method to automatically do a continue() at the beginning of test()
 
 
 =head1 NAME
@@ -81,15 +81,31 @@ ControlBreak - Compare values during iteration to detect changes
 =head1 DESCRIPTION
 
 The B<ControlBreak> module provides a class that is used to detect
-control breaks; i.e. when a value changes. Typically, the data being
-retrieved or iterated over is ordered and there may be more than one
-value that is of interest.  For example consider a table of
-population data with columns for country, district and city, sorted
-by sorted by country and district.  With this module you can create
-an object that will detect changes in the district or country,
-considered level 1 and level 2 respectively. The calling program can
-take action, such as printing subtotals, whenever level changes are
-detected.
+control breaks; i.e. when a value changes. 
+
+Typically, the data being retrieved or iterated over is ordered and 
+there may be more than one value that is of interest.  For example 
+consider a table of population data with columns for country, 
+district and city, sorted by country and district.  With this module 
+you can create an object that will detect changes in the district or 
+country, considered level 1 and level 2 respectively. The calling 
+program can take action, such as printing subtotals, whenever level 
+changes are detected.
+
+Ordered data is not a requirement.  An example using unordered data 
+would be counting consecuitve numbers within a data stream; e.g. 0 0 
+1 1 1 1 0 1 1. Using ControlBreak you can detect each change and 
+count the consecutive values, yielding two zeros, four 1's, one zero, 
+and two 1's.
+
+Note that ControlBreak cannot detect the end of your data stream.
+The test() method is normally called within a loop to detect changes
+in control variables, but once the last iteration is processed there
+are no further calls to test() as the loop ends.  It may be necessary,
+therefore, to do additional processing after the loop in order to
+handle the very last data group; e.g. to print a final set of subtotals.
+
+
 
 =cut
 
@@ -143,6 +159,11 @@ field @_last_values;                    # [10] the values from the previous test
 
 A readonly field that provides the current 1-based iteration number.
 
+This can be useful if you are doing an final processing after an
+iteration loop has ended.  In the event that the data stream is empty
+and there were no iterations, then you can condition your final
+processing on iteration > 0.
+
 =head2 level_names
 
 A readonly field that provides a list of the level names that were
@@ -156,7 +177,7 @@ provided as arguments to new().
 
 =head1 METHODS
 
-=head2 new ( <level_name> [, <lev_level_name> ]... )
+=head2 new ( <level_name> [, <level_name> ]... )
 
 Create a new ControlBreak object.
 
@@ -217,20 +238,17 @@ BUILD {
 # Public methods
 ######################################################################
 
-=head2 comparison ( %ops_or_subs )
+=head2 comparison ( level_name => [ 'eq' | '==' | sub ] ... )
 
-The comparison method accepts a hash of which sets the comparison
+The comparison method accepts a hash which sets the comparison
 operations for the designated levels.  Keywords must match the level
 names provide in new().  Values can be '==' for numeric comparison,
 'eq' for alpha comparison, or anonymous subroutines.
 
 Anonymous subroutines must take two arguments, compare them in some
-fashion, and return a boolean. For example sub { uc($_[0]) eq
-uc($_[1]) } would provide a case-insensitive alpha comparison.
-
-The first argument to the comparison routine will be the value passed 
-to the test() method.  The second argument will be the corresponding value 
-from the last iteration.
+fashion, and return a boolean. The first argument to the comparison 
+routine will be the value passed to the test() method.  The second 
+argument will be the corresponding value from the last iteration.
 
 All levels are provided with default comparison functions as determined
 by new().  This method is provided so you can change one or more of
@@ -259,7 +277,7 @@ method comparison (%h) {
     }
 }
 
-=head2 continue
+=head2 continue ()
 
 Saves the values most recently provided to the test() method so they
 can be compared to new values on the next iteration.
@@ -267,9 +285,12 @@ can be compared to new values on the next iteration.
 On the next iteration these values will be accessible via the last()
 method.
 
+Continue() is best invoked within the continue block of a loop, to
+make sure it isn't missed.
+
 =cut
 
-method continue {
+method continue () {
     @_last_values = @_test_values;
 }
 
@@ -296,9 +317,14 @@ current value belongs to the next group.  The last() method allows
 you to access the value for the group that was just processed so, for
 example, the group name can be included on the subtotal line.
 
-For example, if level names are 'X' and 'Y' and $cb->test($x, $y) was
-the previous invocation of test(), then $cb->last('Y') returns the
-value of $y on the previous iteration.
+For example, if control levels were named 'X' and 'Y' and were are 
+iterating through data and invoking test($x, $y) at each iteration, 
+then invoking $cb->last('Y') on iteration 9 will returns the value of 
+$y on iteration 8.
+
+Note that continue() should not be invoked before last() within the 
+scope of an iteration loop; i.e. continue() should be the last thing 
+done before the next turn of the loop.
 
 =cut
 
@@ -354,21 +380,31 @@ method reset () {
     @_last_values = ( undef ) x $_num_levels;
 }
 
-=head2 $level = test ( $var1 [, $var2 ]... ])
+=head2 test ( $var1 [, $var2 ]... )
 
 Submits the control variables for testing against the values from the
-previous invocation -- if method continue() was called in between.
+previous iteration.
 
-Testing is done in reverse order, from highest
-to lowest (major to minor) and stops once a change is detected. Where
-it stops determines the control break level.  For example, if $var2
-changed, level 2 is returned.  I $var2 did not change, but $var1 did,
-the level 1 is returned.  If nothing changes, then level 0 is
-returned.
+Testing is done in reverse order, from highest to lowest (major to 
+minor) and stops once a change is detected. Where it stops determines 
+the control break level.  For example, if $var2 changed, method 
+levelnum will return 2.  If $var2 did not change, but $var1 did, then 
+method levelnum will return 1.  If nothing changes, then levelnum 
+will return 0.  
 
-The return value can therefore be tested as a simple boolean, where 0
-means there was no control break and non-zero means there was a
-control break.  Or, the level number can be used for finer control.
+Note that the level numbers set by test() are true if there was a level change,
+and false if there wasn't.  So, they can be used as a simple boolean
+test of whether there was a change.
+
+Because level numbers correspond to the hierachy of data order, they
+can be use to trigger multiple actions; e.g. levelnum >= 1 could be
+used to print subtotals for levels 1 whenever a control break occured
+for level 1, 2 or 3.  It is usually the case that higher control
+breaks are meant to cascade to lower control levels and this can be
+achieved in this fashion.
+ 
+Note that method continue() must be called at the end of each iteration
+in order to save the values of the iteration for the next iteration.
 
 =cut
 
