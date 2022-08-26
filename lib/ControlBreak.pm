@@ -1,22 +1,15 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - allowed arguments to new() and test() to be level names or a hash of level_name/operator pairs
-# - allowed a + prefix on a level name to indicate we want numeric comparison
-# - provided a comparison method that takes level_name/operator pairs and sets them
-# - renamed field @_cached_values to @_test_values
-# - converted public field $level to private field $_test_levelnum and provided a levelnum() method to access it
-# - added private field $_test_levelname and provided a levelname() method to access it
-# - updated test cases
-# - updated POD
+# - determined that a ditto method and logic wasn't needed
+# - added a test case for doing ditto by rolling your own comparison function
 
 # To Do:
 # - croak if continue not called at the end of each iteration
-# - consider getting rid of continue and doing it automatically in test
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
-# - provide a is_break method that tests level for non-zero
+# - provide an is_break method that tests level for non-zero
 # - provide method control() as a synonym for test()
-# - provide a ditto option
+# - consider getting rid of continue and doing it automatically in test
 
 
 =head1 NAME
@@ -240,10 +233,25 @@ Anonymous subroutines must take two arguments, compare them in some
 fashion, and return a boolean. For example sub { uc($_[0]) eq
 uc($_[1]) } would provide a case-insensitive alpha comparison.
 
+The first argument to the comparison routine will be the value passed 
+to the test() method.  The second argument will be the corresponding value 
+from the last iteration.
+
 All levels are provided with default comparison functions as determined
 by new().  This method is provided so you can change one or more of
 those defaults.  Any level name not referenced by keys in the
 argument list will be left unchanged.
+
+Some handy comparison functions are:
+    
+    # case-insensitive match
+    sub { lc $_[0] eq lc $_[1] }
+
+    # strings coerced to numbers (so 07 and 7 are equal)
+    sub { ($_[0] + 0) == ($_[1] + 0) }
+
+    # blank values treated as matched
+    sub { $_[0] eq '' ? 1 : $_[0] eq $_[1] }
 
 =cut
 
@@ -394,7 +402,7 @@ method test (@args) {
 
         # compare the current and last values using the comparison function
         # if they don't match, then it's a control break
-        $is_break = not $_fcomp{$level_name}->( $_last_values[$jj], $arg );
+        $is_break = not $_fcomp{$level_name}->( $arg, $_last_values[$jj] );
 
         if ( $is_break ) {
             # internally our lists use the usual zero-based indexing

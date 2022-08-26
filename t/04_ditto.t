@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use v5.18;      # minimum needed for Object::Pad
 
-use Test::More skip_all => 10; #tests => 10;
+use Test::More tests => 9;
 
 use FindBin;
 use lib $FindBin::Bin . '/../lib';
@@ -35,33 +35,39 @@ if ($verbose > 0) {
         '=' x 7, '=' x 9, '=' x 12, '=' x 10;
 }
 
-my $cb = ControlBreak->new( 'eq', 'eq' );
+my $cb = ControlBreak->new( reverse qw( Country State ) );
 
-can_ok $cb, 'ditto';
+# In this test, repeating control values are replaced with blanks,
+# much like you'd see them in a report.  To handle that we provide
+# a comparison routine that returns true when the control value is
+# an empty string, thereby assuming it matches the prior value.  
+# If it's not an empty string, we do a string comparison.
+$cb->comparison(
+    Country => sub { $_[0] eq '' ? 1 : $_[0] eq $_[1] },
+    State   => sub { $_[0] eq '' ? 1 : $_[0] eq $_[1] },
+);
 
-TODO: {
-    my @expected = qw( 0 0 0 1 0 1 2 1 0 );
+my @expected = qw( 0 0 0 1 0 1 2 1 0 );
 
-    my $next = $dt->iterator();
+my $next = $dt->iterator();
 
-    while (my $row = $next->()) {
-        # test() assumes minor to major order
-        # reverse allows the order to match the column order
-        $cb->test( reverse $row->{Country}, $row->{State} );
-        my $level = $cb->level;
+while (my $row = $next->()) {
+    # test() assumes minor to major order
+    # reverse allows the order to match the column order
+    $cb->test( reverse $row->{Country}, $row->{State} );
+    my $level = $cb->levelnum;
 
-        if ($verbose > 0) {
-            # say "\n----- break $level -------" if $level;
-            say sprintf '%s %-7s %-9s %-12s %10s', ' ' x 25, 
-                $row->{Country}, $row->{State}, $row->{City}, $row->{Population};
-        }
-
-        my $expected = shift @expected;
-        my $col = $cbnames[$level];
-        is $cb->level, $expected, $expected ? "break on $col" : "no break";
-        
-        $cb->continue;
+    if ($verbose > 0) {
+        # say "\n----- break $level -------" if $level;
+        say sprintf '%s %-7s %-9s %-12s %10s', ' ' x 25, 
+            $row->{Country}, $row->{State}, $row->{City}, $row->{Population};
     }
+
+    my $expected = shift @expected;
+    my $col = $cbnames[$level];
+    is $cb->levelnum, $expected, $expected ? "break on $col" : "no break";
+    
+    $cb->continue;
 }
 
 sub load_test_data {
