@@ -12,6 +12,7 @@
 
 # To Do:
 # - croak if continue not called at the end of each iteration
+# - consider getting rid of continue and doing it automatically in test
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
 # - provide a is_break method that tests level for non-zero
 # - provide method control() as a synonym for test()
@@ -48,13 +49,13 @@ ControlBreak - Compare values during iteration to detect changes
 
         # break on District (or Country) detected
         if ($cb->levelnum >= 1) {
-            say join "\t", $cb->last('Country'), $cb->last('District'), $district_total . '*';
+            say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
             $district_total = 0;
         }
 
         # break on Country detected
         if ($cb->levelnum >= 2) {
-            say join "\t", $cb->last('Country') . ' total', '', $country_total . '**';
+            say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
             $country_total = 0;
         }
 
@@ -69,8 +70,8 @@ ControlBreak - Compare values during iteration to detect changes
 
     # simulate break at end of data, if we iterated at least once
     if ($cb->iteration > 0) {
-        say join "\t", $cb->last('Country'), $cb->last('District'), $district_total . '*';
-        say join "\t", $cb->last('Country') . ' total', '', $country_total . '**';
+        say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
+        say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
     }
 
     __DATA__
