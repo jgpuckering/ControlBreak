@@ -7,7 +7,7 @@ use v5.18;      # minimum needed for Object::Pad
 use Test::More skip_all => 10; #tests => 10;
 
 use FindBin;
-use lib "$FindBin::Bin/../lib";
+use lib $FindBin::Bin . '/../lib';
 
 use Data::Table;
 use Getopt::Long;
