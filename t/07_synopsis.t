@@ -57,13 +57,13 @@ sub synopsis {
         $cb->test($district, $country);
 
         # break on District (or Country) detected
-        if ($cb->levelnum >= 1) {
+        if ($cb->break('District')) {
             say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
             $district_total = 0;
         }
 
         # break on Country detected
-        if ($cb->levelnum >= 2) {
+        if ($cb->break('Country')) {
             say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
             $country_total = 0;
         }

@@ -60,13 +60,13 @@ sub count_runs {
         $cb->test($v, $label);
 
         # take action if this was a level 1 control break, or above
-        if ($cb->levelnum >= 1) {
+        if ($cb->break('IsExtreme')) {
             say 'L1 ', $cb->last('Label'), ' -> ', $cb->last('IsExtreme'), ' x ', scalar @result;
             @result = ();   # clear captured values
         }
 
         # take action if this was a level 2 control break, or above
-        if ($cb->levelnum >= 2) {
+        if ($cb->break('Label')) {
             say 'L2 ========= ', $cb->last('Label');
             @result = ();   # clear captured values
         }

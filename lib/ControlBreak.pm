@@ -1,12 +1,10 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - init $_test_levelname to '' instead of zero
-# - reset some fields in reset that were overlooked
+# - provide a break method to simplify testing for a control break, and cascading actions
 
 # To Do:
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
-# - provide an is_break method that tests level for non-zero
 # - provide method control() as a synonym for test()
 # - consider adding an autocontinue method to automatically do a continue() at the beginning of test()
 
@@ -36,13 +34,13 @@ ControlBreak - Compare values during iteration to detect changes
         $cb->test($district, $country);
 
         # break on District (or Country) detected
-        if ($cb->levelnum >= 1) {
+        if ($cb->break('District')) {
             say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
             $district_total = 0;
         }
 
         # break on Country detected
-        if ($cb->levelnum >= 2) {
+        if ($cb->break('Country')) {
             say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
             $country_total = 0;
         }
@@ -81,21 +79,21 @@ ControlBreak - Compare values during iteration to detect changes
 =head1 DESCRIPTION
 
 The B<ControlBreak> module provides a class that is used to detect
-control breaks; i.e. when a value changes. 
+control breaks; i.e. when a value changes.
 
-Typically, the data being retrieved or iterated over is ordered and 
-there may be more than one value that is of interest.  For example 
-consider a table of population data with columns for country, 
-district and city, sorted by country and district.  With this module 
-you can create an object that will detect changes in the district or 
-country, considered level 1 and level 2 respectively. The calling 
-program can take action, such as printing subtotals, whenever level 
+Typically, the data being retrieved or iterated over is ordered and
+there may be more than one value that is of interest.  For example
+consider a table of population data with columns for country,
+district and city, sorted by country and district.  With this module
+you can create an object that will detect changes in the district or
+country, considered level 1 and level 2 respectively. The calling
+program can take action, such as printing subtotals, whenever level
 changes are detected.
 
-Ordered data is not a requirement.  An example using unordered data 
-would be counting consecuitve numbers within a data stream; e.g. 0 0 
-1 1 1 1 0 1 1. Using ControlBreak you can detect each change and 
-count the consecutive values, yielding two zeros, four 1's, one zero, 
+Ordered data is not a requirement.  An example using unordered data
+would be counting consecuitve numbers within a data stream; e.g. 0 0
+1 1 1 1 0 1 1. Using ControlBreak you can detect each change and
+count the consecutive values, yielding two zeros, four 1's, one zero,
 and two 1's.
 
 Note that ControlBreak cannot detect the end of your data stream.
@@ -239,6 +237,65 @@ BUILD {
 # Public methods
 ######################################################################
 
+=head2 break ( [ <level_name> ] )
+
+The break method provides a convenient way to check whether the last 
+invocation of the test method resulted in a control break, or a 
+control break greater than or equal to the <level_name> optionally 
+provided as an argument.
+
+For example, if you have levels 'City', 'State' and 'Country', and
+there's a control break on level 1 (City), then invoking break()
+will return 1 and therefore be treated as true within a condition.
+If there was no control break, then 0 (false) is returned.
+
+When invoked with a level name argument, break will map the level name
+to a level number and compare it to the control break level determined
+by the last invocation of test().  If the tested control break level
+number is equal or higher than the argument level, then that level
+number is returned and, since it will be non-zero, treated as a true
+value within a condition.  Otherwise, zero (false) is returned.
+
+Ultimately the point of this is that you can use it to write a series 
+of actions, like printing subtotals and clearing subtotal variables, 
+such that a higher level control break will trigger actions 
+associated with lower level control breaks. For example:
+
+    my $cb = ControlBreak( qw/City State Country/ );
+
+    if ( $cb->break() ) {
+        say '=== control break detected at level: ' . $cb->levelname;
+    }
+    if ( $cb->break('City') ) {
+        say "City total: $city";
+        $city = 0;
+    }
+    if ( $cb->break('State') ) {
+        say "State total: $state";
+        $state = 0;
+    }
+    if ( $cb->break('Country') ) {
+        say "Country total: $country";
+        $country = 0;
+    }
+
+In this example, when a Country control break is detected all three 
+subtotals will be printed.  When a State control break is detected, 
+only State and City will print.
+
+=cut
+
+method break ( $level_name=undef ) {
+    if ($level_name) {
+        croak '*E* invalid level name: ' . $level_name
+            unless exists $_levidx{$level_name};
+        my $levnum = $_levidx{$level_name} + 1;
+        return $_test_levelnum >= $levnum;
+    }
+    
+    return $_test_levelnum;
+}
+
 =head2 comparison ( level_name => [ 'eq' | '==' | sub ] ... )
 
 The comparison method accepts a hash which sets the comparison
@@ -247,8 +304,8 @@ names provide in new().  Values can be '==' for numeric comparison,
 'eq' for alpha comparison, or anonymous subroutines.
 
 Anonymous subroutines must take two arguments, compare them in some
-fashion, and return a boolean. The first argument to the comparison 
-routine will be the value passed to the test() method.  The second 
+fashion, and return a boolean. The first argument to the comparison
+routine will be the value passed to the test() method.  The second
 argument will be the corresponding value from the last iteration.
 
 All levels are provided with default comparison functions as determined
@@ -257,7 +314,7 @@ those defaults.  Any level name not referenced by keys in the
 argument list will be left unchanged.
 
 Some handy comparison functions are:
-    
+
     # case-insensitive match
     sub { lc $_[0] eq lc $_[1] }
 
@@ -272,7 +329,7 @@ Some handy comparison functions are:
 method comparison (%h) {
     while ( my ($level_name, $v) = each %h ) {
         croak '*E* invalid level name: ' . $level_name
-            if not exists $_levidx{$level_name};
+            unless exists $_levidx{$level_name};
         $_comp_op{$level_name} = $v;
         $_fcomp{$level_name} = _op_to_func($v);
     }
@@ -319,13 +376,13 @@ current value belongs to the next group.  The last() method allows
 you to access the value for the group that was just processed so, for
 example, the group name can be included on the subtotal line.
 
-For example, if control levels were named 'X' and 'Y' and were are 
-iterating through data and invoking test($x, $y) at each iteration, 
-then invoking $cb->last('Y') on iteration 9 will returns the value of 
+For example, if control levels were named 'X' and 'Y' and were are
+iterating through data and invoking test($x, $y) at each iteration,
+then invoking $cb->last('Y') on iteration 9 will returns the value of
 $y on iteration 8.
 
-Note that continue() should not be invoked before last() within the 
-scope of an iteration loop; i.e. continue() should be the last thing 
+Note that continue() should not be invoked before last() within the
+scope of an iteration loop; i.e. continue() should be the last thing
 done before the next turn of the loop.
 
 =cut
@@ -348,7 +405,7 @@ method last ($arg) {
 
 =head2 levelname
 
-Return the level name for the most recent invocation of the test 
+Return the level name for the most recent invocation of the test
 method.
 
 =cut
@@ -359,7 +416,7 @@ method levelname () {
 
 =head2 levelnum
 
-Return the level number for the most recent invocation of the test 
+Return the level number for the most recent invocation of the test
 method.
 
 =cut
@@ -371,7 +428,7 @@ method levelnum () {
 =head2 reset
 
 Resets the state of the object so it can be used again for another
-set of iterations using the same number and type of control 
+set of iterations using the same number and type of control
 establish when the object was instantiated with new() and includes
 any comparisons that were subsequently modified.
 
@@ -391,12 +448,12 @@ method reset () {
 Submits the control variables for testing against the values from the
 previous iteration.
 
-Testing is done in reverse order, from highest to lowest (major to 
-minor) and stops once a change is detected. Where it stops determines 
-the control break level.  For example, if $var2 changed, method 
-levelnum will return 2.  If $var2 did not change, but $var1 did, then 
-method levelnum will return 1.  If nothing changes, then levelnum 
-will return 0.  
+Testing is done in reverse order, from highest to lowest (major to
+minor) and stops once a change is detected. Where it stops determines
+the control break level.  For example, if $var2 changed, method
+levelnum will return 2.  If $var2 did not change, but $var1 did, then
+method levelnum will return 1.  If nothing changes, then levelnum
+will return 0.
 
 Note that the level numbers set by test() are true if there was a level change,
 and false if there wasn't.  So, they can be used as a simple boolean
@@ -408,7 +465,7 @@ used to print subtotals for levels 1 whenever a control break occured
 for level 1, 2 or 3.  It is usually the case that higher control
 breaks are meant to cascade to lower control levels and this can be
 achieved in this fashion.
- 
+
 Note that method continue() must be called at the end of each iteration
 in order to save the values of the iteration for the next iteration.
 If not, the next test() invocation will croak.
@@ -418,7 +475,7 @@ If not, the next test() invocation will croak.
 method test (@args) {
     croak '*E* number of arguments to test() must match those given in new()'
         if @args != $_num_levels;
-        
+
     croak '*E* continue() must be called after test()'
         unless $iteration == $_continue_count;
 
