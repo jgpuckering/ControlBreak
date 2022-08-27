@@ -1,11 +1,9 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - replace use Modern::Perl with v5.18 in the code
-# - update POD Dependancies section
+# - croak if continue not called at the end of each iteration
 
 # To Do:
-# - croak if continue not called at the end of each iteration
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
 # - provide an is_break method that tests level for non-zero
 # - provide method control() as a synonym for test()
@@ -153,6 +151,7 @@ field $_test_levelnum           { 0 };  # [7] last level returned by test()
 field $_test_levelname          { 0 };  # [8] last level returned by test()
 field @_test_values;                    # [9] the values of the current test()
 field @_last_values;                    # [10] the values from the previous test()
+field $_continue_count          { 0 };  # [11] the number of types continue was called
 
 =head1 FIELDS
 
@@ -293,6 +292,7 @@ make sure it isn't missed.
 
 method continue () {
     @_last_values = @_test_values;
+    $_continue_count++;
 }
 
 =head2 reset
@@ -378,6 +378,7 @@ any comparisons that were subsequently modified.
 
 method reset () {
     $iteration = 0;
+    $_continue_count = 0;
     @_last_values = ( undef ) x $_num_levels;
 }
 
@@ -412,6 +413,9 @@ in order to save the values of the iteration for the next iteration.
 method test (@args) {
     croak '*E* number of arguments to test() must match those given in new()'
         if @args != $_num_levels;
+        
+    croak '*E* continue() must be called after test()'
+        unless $iteration == $_continue_count;
 
     @_test_values = @args;
 
