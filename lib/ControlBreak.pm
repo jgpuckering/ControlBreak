@@ -1,7 +1,8 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - croak if continue not called at the end of each iteration
+# - init $_test_levelname to '' instead of zero
+# - reset some fields in reset that were overlooked
 
 # To Do:
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
@@ -148,7 +149,7 @@ field %_levidx                  {   };  # [4] map of lenname to levidx
 field %_comp_op;                        # [5] comparison operators
 field %_fcomp;                          # [6] comparison functions
 field $_test_levelnum           { 0 };  # [7] last level returned by test()
-field $_test_levelname          { 0 };  # [8] last level returned by test()
+field $_test_levelname          { '' }; # [8] last level returned by test()
 field @_test_values;                    # [9] the values of the current test()
 field @_last_values;                    # [10] the values from the previous test()
 field $_continue_count          { 0 };  # [11] the number of types continue was called
@@ -377,8 +378,11 @@ any comparisons that were subsequently modified.
 =cut
 
 method reset () {
-    $iteration = 0;
-    $_continue_count = 0;
+    $iteration          = 0;
+    $_continue_count    = 0;
+    $_test_levelnum     = 0;
+    $_test_levelname    = 0;
+    @_test_values       = ();
     @_last_values = ( undef ) x $_num_levels;
 }
 
@@ -407,6 +411,7 @@ achieved in this fashion.
  
 Note that method continue() must be called at the end of each iteration
 in order to save the values of the iteration for the next iteration.
+If not, the next test() invocation will croak.
 
 =cut
 
