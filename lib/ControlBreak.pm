@@ -359,7 +359,6 @@ method continue () {
     @_last_values = @_test_values;
     $_continue_count++;
 }
-=cut
 
 =head2 last ($level)
 
