@@ -1,8 +1,7 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - provide a break method to simplify testing for a control break, and cascading actions
-# - provide test_and_do method to simplify coding for end of data processing 
+# - restore the check that continue() follows test() that was removed for debugging
 
 # To Do:
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
@@ -482,8 +481,8 @@ method test (@args) {
     croak '*E* number of arguments to test() must match those given in new()'
         if @args != $_num_levels;
 
-    # croak '*E* continue() must be called after test()'
-        # unless $iteration == $_continue_count;
+    croak '*E* continue() must be called after test()'
+        unless $iteration == $_continue_count;
 
     @_test_values = @args;
 
