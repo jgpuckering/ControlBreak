@@ -72,7 +72,7 @@ sub synopsis {
         $district_total += $population;
     }
     continue {
-        # cache the current values (as received by ->test) as the new
+        # save the current values (as received by ->test) as the new
         # 'last' values on the next iteration.
         $cb->continue();
     }
