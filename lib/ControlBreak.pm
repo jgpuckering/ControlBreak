@@ -89,7 +89,7 @@ program can take action, such as printing subtotals, whenever level
 changes are detected.
 
 Ordered data is not a requirement.  An example using unordered data
-would be counting consecuitve numbers within a data stream; e.g. 0 0
+would be counting consecutive numbers within a data stream; e.g. 0 0
 1 1 1 1 0 1 1. Using ControlBreak you can detect each change and
 count the consecutive values, yielding two zeros, four 1's, one zero,
 and two 1's.
