@@ -45,43 +45,42 @@ sub synopsis {
     # for tracking the end of the file
     my $cb = ControlBreak->new( qw( District Country EOF ) );
 
+    my @totals;
 
-    my $district_total = 0;
-    my $country_total = 0;
-    my $grand_total = 0;
+    # set up some level number variables for convenient indexing into @totals
+    my ($L1, $L2, $L3) = $cb->level_numbers;
 
     while (my $line = <DATA>) {
         chomp $line;
 
         my ($country, $district, $city, $population) = split ',', $line;
 
-        my $subtotals = sub {
+        my $sub_totals = sub {
             # break on District (or Country) detected
             if ($cb->break('District')) {
-                say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
-                $district_total = 0;
+                say join ',', $cb->last('Country'), $cb->last('District'), $totals[$L1] . '*';
+                $totals[$L1] = 0;
             }
 
             # break on Country detected
             if ($cb->break('Country')) {
-                say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
-                $country_total = 0;
+                say join ',', $cb->last('Country') . ' total', '', $totals[$L2] . '**';
+                $totals[$L2] = 0;
             }
 
-            # we've reached end of data
+            # break at end of file
             if ($cb->break('EOF')) {
-                say 'Grand total,,', $grand_total, '***';
+                say 'Grand total,,', $totals[$L3], '***';
             }
 
-            $district_total += $population;
-            $country_total  += $population;
-            $grand_total    += $population;
+            # accumulate subtotals
+            map { $totals[$_] += $population } $cb->level_numbers;
         };
-        
+
         # Test the values (minor to major order) using perl eof to
         # detect the last record of the file and trigger an EOF break.
         # See https://perldoc.perl.org/functions/eof
-        $cb->test_and_do($district, $country, eof, $subtotals);
+        $cb->test_and_do($district, $country, eof, $sub_totals);
     }
 }
 

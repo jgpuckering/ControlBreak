@@ -46,12 +46,13 @@ sub synopsis {
     my $cb = ControlBreak->new( qw( District Country EOL ) );
 
 
-    my $country_total = 0;
-    my $district_total = 0;
-    my $grand_total = 0;
-    
+    my @totals;
+
+    # set up some level number variables for convenient indexing into @totals
+    my ($L1, $L2, $L3) = $cb->level_numbers;
+
     my @data = <DATA>;
-    
+
     # iterations begin at zero and are incremented during the call
     # to test() -- which is called within test_and_do().  So, the
     # iteration number of the last value in the list -- for the
@@ -67,31 +68,28 @@ sub synopsis {
         # # test the values (minor to major order) using perl eof to
         # # detect the last record of the file and trigger an EOF break
         # $cb->test($district, $country, $cb->iteration == $last_record);
-        my $st = sub {
+        my $sub_totals = sub {
             # break on District (or Country) detected
             if ($cb->break('District')) {
-                say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
-                $district_total = 0;
+                say join ',', $cb->last('Country'), $cb->last('District'), $totals[$L1] . '*';
+                $totals[$L1] = 0;
             }
 
             # break on Country detected
             if ($cb->break('Country')) {
-                say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
-                $country_total = 0;
+                say join ',', $cb->last('Country') . ' total', '', $totals[$L2] . '**';
+                $totals[$L2] = 0;
             }
-            # simulate break at end of data, if we iterated at least once
+            # break at end of list
             if ($cb->break('EOL')) {
-                #say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*@';
-                #say join ',', $cb->last('Country') . ' total', '', $country_total . '**@';
-                say 'Grand total,,', $grand_total, '***';
+                say 'Grand total,,', $totals[$L3], '***';
             }
 
-            $country_total  += $population;
-            $district_total += $population;
-            $grand_total    += $population;
+            # accumulate subtotals
+            map { $totals[$_] += $population } $cb->level_numbers;
         };
 
-        $cb->test_and_do($district, $country, $cb->iteration == $last_iter, $st);
+        $cb->test_and_do($district, $country, $cb->iteration == $last_iter, $sub_totals);
     }
 }
 

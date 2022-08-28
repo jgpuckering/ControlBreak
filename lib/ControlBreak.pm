@@ -1,7 +1,8 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - restore the check that continue() follows test() that was removed for debugging
+# - add method level_numbers()
+# - revise eof.t and end_of_list.t to use the level_numbers method and accumulate subtotals in an array
 
 # To Do:
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
@@ -165,9 +166,9 @@ and there were no iterations, then you can condition your final
 processing on iteration > 0.
 
 Note that B<interation> is incremented by B<test> (or <test_and_do>).
-Therefore, when called wihtin a loop it is effectively zero-based if 
-referenced within the iteration block before B<test> is invoked, and 
-then one-based after B<test>.  
+Therefore, when called wihtin a loop it is effectively zero-based if
+referenced within the iteration block before B<test> is invoked, and
+then one-based after B<test>.
 
 =head2 level_names
 
@@ -429,11 +430,50 @@ method levelnum () {
 }
 
 
+=head2 level_numbers
+
+Return a list of level numbers corresponding to the levels defined
+in B<new()>.  This can be useful, for example, when you want to
+set up some lexical variables for use as indexes into a list you
+might use to accumulate subtotals.
+
+    my $cb = ControlBreak->new( qw( L1 L2 EOD ) );
+    my @totals;
+    my ($L1, $L2, $EOD) = $cb->level_numbers;
+
+    foreach my $sublist (@list_of_lists) {
+        my ($control1, $control2, $number) = $sublist->@*;
+        ...
+        my $sub_totals = sub {
+            if ($cb->break('L1')) {
+                # report the L1 subtotal here
+                $totals[$L1] = 0; # clear the subtotal
+            }
+            ...
+            # accumulate subtotals
+            map { $totals[$_] += $number } $cb->level_numbers;
+        };
+
+        $cb->test_and_do(
+            $control1,
+            $control2,
+            $cb->iteration == $list_of_lists - 1,
+            $sub_totals
+        );
+    }
+
+
+=cut
+
+method level_numbers () {
+    return 1 .. $_num_levels;
+}
+
 =head2 reset
 
-Resets the state of the object so it can be used again for another 
-set of iterations using the same number and type of controls 
-establish when the object was instantiated with new().  Any 
+Resets the state of the object so it can be used again for another
+set of iterations using the same number and type of controls
+establish when the object was instantiated with new().  Any
 comparisons that were subsequently modified are retained.
 
 =cut
@@ -452,15 +492,15 @@ method reset () {
 Submits the control variables for testing against the values from the
 previous iteration.
 
-Testing is done in reverse order, from highest to lowest (major to 
-minor) and stops once a change is detected. Where it stops determines 
-the control break level.  For example, if $var2 changed, method 
-levelnum will return 2.  If $var2 did not change, but $var1 did, then 
-method B<levelnum> will return 1.  If nothing changes, then 
+Testing is done in reverse order, from highest to lowest (major to
+minor) and stops once a change is detected. Where it stops determines
+the control break level.  For example, if $var2 changed, method
+levelnum will return 2.  If $var2 did not change, but $var1 did, then
+method B<levelnum> will return 1.  If nothing changes, then
 B<levelnum> will return 0.
 
-Note that the level numbers set by B<test(...)> are true if there was 
-a level change, and false if there wasn't.  So, they can be used as a 
+Note that the level numbers set by B<test(...)> are true if there was
+a level change, and false if there wasn't.  So, they can be used as a
 simple boolean test of whether there was a change.  Or you can use
 the B<break> method to determine whether any control break has occured.
 
@@ -471,8 +511,8 @@ for level 1, 2 or 3.  It is usually the case that higher control
 breaks are meant to cascade to lower control levels and this can be
 achieved in this fashion.  The B<break> method simplifies this.
 
-Note that method B<continue()> must be called at the end of each 
-iteration in order to save the values of the iteration for the next 
+Note that method B<continue()> must be called at the end of each
+iteration in order to save the values of the iteration for the next
 iteration. If not, the next B<test(...)> invocation will croak.
 
 =cut
@@ -529,32 +569,32 @@ method test (@args) {
 
 =head2 test_and_do ( $var1 [, $var2 ]... $var_end, $coderef )
 
-The B<test_and_do()> method is similar to B<test()>. It takes the same 
-arguments as B<test()>, plus one additional argument that is an 
-anonymous code reference.  Internally, it calls B<test()> and then, if 
-there is a control break, calls the anonymous subroutine provided in 
-the last argument.  Typically, that code will perform work related to 
+The B<test_and_do()> method is similar to B<test()>. It takes the same
+arguments as B<test()>, plus one additional argument that is an
+anonymous code reference.  Internally, it calls B<test()> and then, if
+there is a control break, calls the anonymous subroutine provided in
+the last argument.  Typically, that code will perform work related to
 subtotals or other actions necessary when a control break occurs.
 
-But B<test_and_do> does one other thing.  It expects the last control 
-variable ($var_end) to be an end of data indicator, such as the perl 
-builtin operator B<eof>.  This indicator should return false on each 
-iteration over the data until the very last iteration -- when it 
+But B<test_and_do> does one other thing.  It expects the last control
+variable ($var_end) to be an end of data indicator, such as the perl
+builtin operator B<eof>.  This indicator should return false on each
+iteration over the data until the very last iteration -- when it
 should change to true, thereby triggering a major control break.
 
-What test_and_do does then is to add an extra loop.  This simulates 
+What test_and_do does then is to add an extra loop.  This simulates
 a final record and will trigger B<test()> to signal control breaks
 at all levels.  Thus, the code provided will be executed between
 every change of data AND after all data has been iterated over.
 
-This avoids the necessity of repeating the control break actions 
-you've put inside the data loop immediately after the loop's closing 
-bracket.  When you just use B<test> and B<continue>, an end-of-data 
-control break won't occur and the simplist workaround is to just 
+This avoids the necessity of repeating the control break actions
+you've put inside the data loop immediately after the loop's closing
+bracket.  When you just use B<test> and B<continue>, an end-of-data
+control break won't occur and the simplist workaround is to just
 duplicate your control break code after the loops closing bracket.
 
-Here's a typical use case involving end of file processing.  Note the 
-extra control level, named 'EOF', and the use of the B<eof> builtin 
+Here's a typical use case involving end of file processing.  Note the
+extra control level, named 'EOF', and the use of the B<eof> builtin
 function as the second last argument of B<test_and_do>:
 
     my $cb = ControlBreak->new( qw( L1 L2 EOF ) );
@@ -562,12 +602,12 @@ function as the second last argument of B<test_and_do>:
     my $lev1_subtotal = 0;
     my $lev2_subtotal = 0;
     my $grand_total = 0;
-    
+
     while (my $line = <>) {
         chomp $line;
- 
+
         my ($lev1, $lev2, $data) = split "\t", $line;
-        
+
         my $subtotal_coderef = sub {
             if ($cb->break('L1')) {
                 say $cb->last('L1'), $cb->last('L2'), $lev1_subtotal . '*';
@@ -577,38 +617,38 @@ function as the second last argument of B<test_and_do>:
             if ($cb->break('EOF')) {
                 say 'Grand total,,', $grand_total, '***';
             }
-            
+
             $lev1_subtotal  += $data;
             $lev2_subtotal  += $data;
             $gran_total     += $data;
         }
-        
+
         $cb->test_and_do($lev1, $lev2, eof, $subtotal_coderef);
     }
-    
-Also note that if your subroutine needs to reference variables 
-defined outside the scope of the loop (as in this case with the 
-totalling variables) then it needs to be defined within the loop so 
-it can be a closure over the variables in the enclosing scope.  
 
-Another typical use case involves iterating over a list of values. 
-Here, we have no built in function to tell us when we've reached the 
-final value, but if we have a fixed list of values we can use the 
-length of the list and test it against the value returned by the 
+Also note that if your subroutine needs to reference variables
+defined outside the scope of the loop (as in this case with the
+totalling variables) then it needs to be defined within the loop so
+it can be a closure over the variables in the enclosing scope.
+
+Another typical use case involves iterating over a list of values.
+Here, we have no built in function to tell us when we've reached the
+final value, but if we have a fixed list of values we can use the
+length of the list and test it against the value returned by the
 ControlBreak iterator method.  For example:
- 
+
     my $cb = ControlBreak->new( qw( L1 L2 EOD ) );
 
     my $lev1_subtotal = 0;
     my $lev2_subtotal = 0;
     my $grand_total = 0;
-    
+
     my $last_iter = @data - 1;
-    
+
     foreach my $line (@data {
         chomp $line;
         my ($lev1, $lev2, $data) = split "\t", $line;
-        
+
         my $subtotal_coderef = sub {
             if ($cb->break('L1')) {
                 say $cb->last('L1'), $cb->last('L2'), $lev1_subtotal . '*';
@@ -618,7 +658,7 @@ ControlBreak iterator method.  For example:
             if ($cb->break('EOD')) {
                 say 'Grand total,,', $grand_total, '***';
             }
-            
+
             $lev1_subtotal  += $data;
             $lev2_subtotal  += $data;
             $gran_total     += $data;
@@ -626,7 +666,7 @@ ControlBreak iterator method.  For example:
 
         $cb->test_and_do($lev1, $lev2, $cb->iteration == $last_iter, $subtotal_coderef);
     }
-    
+
 =cut
 
 method test_and_do (@args) {
@@ -638,15 +678,15 @@ method test_and_do (@args) {
     my $eod = 0 + $args[-1];
 
     croak '*E* last argument of test_and_do must be a code reference'
-        unless ref $coderef eq 'CODE';   
+        unless ref $coderef eq 'CODE';
 
     for my $ii (0..$eod) {
         $args[-1] = $ii;
-        $self->test(@args);       
+        $self->test(@args);
         $coderef->();
         $self->continue;
     }
-    
+
 }
 
 ######################################################################
