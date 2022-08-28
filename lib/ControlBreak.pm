@@ -1,13 +1,10 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - add method level_numbers()
-# - revise eof.t and end_of_list.t to use the level_numbers method and accumulate subtotals in an array
+# - switch from using say join to using printf in the Synopsis example
 
 # To Do:
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
-# - provide method control() as a synonym for test()
-# - consider adding an autocontinue method to automatically do a continue() at the beginning of test()
 
 
 =head1 NAME
@@ -36,13 +33,13 @@ ControlBreak - Compare values during iteration to detect changes
 
         # break on District (or Country) detected
         if ($cb->break('District')) {
-            say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
+            printf "%s,%s,%d%s\n", $cb->last('Country'), $cb->last('District'), $district_total, '*';
             $district_total = 0;
         }
 
         # break on Country detected
         if ($cb->break('Country')) {
-            say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
+            printf "%s total,%s,%d%s\n", $cb->last('Country'), '', $country_total, '**';
             $country_total = 0;
         }
 
@@ -57,8 +54,8 @@ ControlBreak - Compare values during iteration to detect changes
 
     # simulate break at end of data, if we iterated at least once
     if ($cb->iteration > 0) {
-        say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
-        say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
+        printf "%s,%s,%d%s\n", $cb->last('Country'), $cb->last('District'), $district_total, '*';
+        printf "%s total,%s,%d%s\n", $cb->last('Country'), '', $country_total, '**';
     }
 
     __DATA__

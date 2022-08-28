@@ -58,13 +58,13 @@ sub synopsis {
 
         # break on District (or Country) detected
         if ($cb->break('District')) {
-            say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
+            printf "%s,%s,%d%s\n", $cb->last('Country'), $cb->last('District'), $district_total, '*';
             $district_total = 0;
         }
 
         # break on Country detected
         if ($cb->break('Country')) {
-            say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
+            printf "%s total,%s,%d%s\n", $cb->last('Country'), '', $country_total, '**';
             $country_total = 0;
         }
 
@@ -79,8 +79,8 @@ sub synopsis {
 
     # simulate break at end of data, if we iterated at least once
     if ($cb->iteration > 0) {
-        say join ',', $cb->last('Country'), $cb->last('District'), $district_total . '*';
-        say join ',', $cb->last('Country') . ' total', '', $country_total . '**';
+        printf "%s,%s,%d%s\n", $cb->last('Country'), $cb->last('District'), $district_total, '*';
+        printf "%s total,%s,%d%s\n", $cb->last('Country'), '', $country_total, '**';
     }
 }
 
