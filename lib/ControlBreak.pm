@@ -7,6 +7,13 @@
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
 
 
+########################################################################
+# perlcritic rules
+########################################################################
+
+## no critic [ProhibitVersionStrings]
+## no critic [RequirePodAtEnd]
+
 =head1 NAME
 
 ControlBreak - Compare values during iteration to detect changes
@@ -107,21 +114,6 @@ place of B<test()> and B<continue()>.
 =cut
 
 ########################################################################
-# perlcritic rules
-########################################################################
-
-## no critic [ProhibitSubroutinePrototypes]
-
-# due to use of postfix dereferencing, we have to disable these warnings
-## no critic [References::ProhibitDoubleSigils]
-
-# perlcritic wants POD sections like VERSION, DIAGNOSTICS, CONFIGURATION AND ENVIRONMENT,
-# and INCOMPATIBILITIES.  But so far these are unneeded so we'll disable these warnings
-# here so that perlcritic gives the module a clean bill of health.
-
-## no critic (Documentation::RequirePodSections)
-
-########################################################################
 # Libraries and Features
 ########################################################################
 use strict;
@@ -131,7 +123,12 @@ use v5.18;
 use Object::Pad 0.66 qw( :experimental(init_expr) );
 
 package ControlBreak;
-class   ControlBreak 1.00;
+class   ControlBreak;
+
+# althouth Object::Pad allows a version argument on the class statement
+# we can't use it because we want Dist::Zilla to set it from the dist.ini
+# version -- and that requires it to be an 'our' statement.
+our $VERSION = 'v0.0.0';
 
 use Carp            qw(croak);
 
@@ -388,7 +385,7 @@ thing done before the next turn of the loop.
 
 =cut
 
-method last ($arg) {
+method last ($arg) {    ## no critic [ProhibitParensWithBuiltins]
     my $retval;
 
     if ( $arg =~ m{ \A [1-9]\d* \Z }xms ) {
@@ -476,7 +473,7 @@ comparisons that were subsequently modified are retained.
 
 =cut
 
-method reset () {
+method reset () {   ## no critic [ProhibitParensWithBuiltins]
     $iteration          = 0;
     $_continue_count    = 0;
     $_test_levelnum     = 0;
@@ -683,7 +680,7 @@ method test_and_do (@args) {
     my $eod = $args[-1];
 
     croak '*E* test_and_do invalid boolean value in 2nd-last argument: ' . $eod
-        unless !$eod or $eod =~ m{ 0 | 1 }xms;
+        if $eod and $eod !~ m{ \A [01] \Z }xms;
 
     for my $ii (0..$eod) {
         $args[-1] = $ii;
