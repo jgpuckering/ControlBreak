@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use v5.18;      # minimum needed for Object::Pad
 
-use Test::More tests => 17;
+use Test::More tests => 20;
 use Test::Exception;
 
 use FindBin;
@@ -38,6 +38,13 @@ throws_ok
     qr/[*]E[*] invalid level name: XXX/,
     'last() croaks when given an invalid level name';
 
+$cb->reset;
+$cb->test('xxx');
+$cb->continue;
+$cb->test('yyy');
+
+ok $cb->last(1) eq 'xxx', 'last() accepts a valid level number';
+
 
 $cb = ControlBreak->new( '+L1_areacode', 'L2_country' );
 
@@ -50,7 +57,7 @@ throws_ok
     { $cb->comparison( L2_country => 'ZZZ' ) }
     qr/[*]E[*] invalid comparison operator: ZZZ/,
     'comparison croaks given an invalid operator/coderef';
-    
+
 my @levnames = $cb->level_names;
 my @expected =  ( 'L1_areacode', 'L2_country' );
 is_deeply \@levnames, \@expected, 'method level_names';
@@ -64,6 +71,15 @@ ok $cb->break(), 'break true test';
 $cb->continue;
 $cb->test( '860', 'US');
 ok !$cb->break(), 'break false test';
+
+# special testing to cover the case of undef values, necessary
+# to improve Devel::Cover results for condition coverage
+my $undef_cb = ControlBreak->new( 'L1' );
+$undef_cb->test(undef);
+ok !$undef_cb->break, 'undef on first iteration does not cause break';
+$undef_cb->continue;
+$undef_cb->test(undef);
+ok !$undef_cb->break, 'undef on second iteration does not cause break';
 
 throws_ok
     { $cb->break('XXX') }

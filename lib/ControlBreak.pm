@@ -391,10 +391,11 @@ thing done before the next turn of the loop.
 method last ($arg) {
     my $retval;
 
-    if ( $arg =~ m{ \A \d+ \Z }xms ) {
+    if ( $arg =~ m{ \A [1-9]\d* \Z }xms ) {
+        my $levidx = $arg - 1;
         croak '*E* invalid level number: ' . $arg
-            unless exists $_levname{$arg};
-        $retval = $_last_values[$arg];
+            unless exists $_levname{$levidx};
+    $retval = $_last_values[$levidx];
     } else {
         croak '*E* invalid level name: ' . $arg
             unless exists $_levidx{$arg};
@@ -537,7 +538,8 @@ method test (@args) {
 
         # on the first iteration, make the last values match the current
         # ones so we don't detect any control break
-        $_last_values[$jj] //= $arg
+
+        $_last_values[$jj] //= $arg # uncoverable condition left
             if $iteration == 1;
 
         my $level_name = $_levname{$jj};
@@ -679,7 +681,7 @@ method test_and_do (@args) {
         unless ref $coderef eq 'CODE';
 
     my $eod = $args[-1];
-    
+
     croak '*E* test_and_do invalid boolean value in 2nd-last argument: ' . $eod
         unless !$eod or $eod =~ m{ 0 | 1 }xms;
 
@@ -689,7 +691,7 @@ method test_and_do (@args) {
         $coderef->();
         $self->continue;
     }
-    
+
     return $self->break;
 }
 
@@ -699,6 +701,8 @@ method test_and_do (@args) {
 sub _op_to_func ($op) {
 
     my $fcompare;
+
+    no warnings 'uninitialized';
 
     if ($op eq '==') {
         $fcompare = sub { $_[0] == $_[1] };
