@@ -10,7 +10,7 @@ use Test::Exception;
 use FindBin;
 use lib $FindBin::Bin . '/../lib';
 
-use_ok 'ControlBreak';
+require_ok 'ControlBreak';
 
 my $cb = new_ok 'ControlBreak' => [ 'L1_country', 'L2_city', '+L3_areanum' ];
 
