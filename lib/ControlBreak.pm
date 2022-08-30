@@ -675,10 +675,13 @@ method test_and_do (@args) {
 
     my $coderef = pop @args;
 
-    croak '*E* last argument of test_and_do must be a code reference'
+    croak '*E* test_and_do last argument must be a code reference'
         unless ref $coderef eq 'CODE';
 
-    my $eod = 0 + $args[-1];
+    my $eod = $args[-1];
+    
+    croak '*E* test_and_do invalid boolean value in 2nd-last argument: ' . $eod
+        unless !$eod or $eod =~ m{ 0 | 1 }xms;
 
     for my $ii (0..$eod) {
         $args[-1] = $ii;

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use v5.18;      # minimum needed for Object::Pad
 
-use Test::More tests => 15;
+use Test::More tests => 17;
 use Test::Exception;
 
 use FindBin;
@@ -46,6 +46,11 @@ throws_ok
     qr/[*]E[*] invalid level name: XXX/,
     'comparison() croaks when given an invalid level name';
 
+throws_ok
+    { $cb->comparison( L2_country => 'ZZZ' ) }
+    qr/[*]E[*] invalid comparison operator: ZZZ/,
+    'comparison croaks given an invalid operator/coderef';
+    
 my @levnames = $cb->level_names;
 my @expected =  ( 'L1_areacode', 'L2_country' );
 is_deeply \@levnames, \@expected, 'method level_names';
@@ -81,15 +86,18 @@ throws_ok
     qr/[*]E[*] test_and_do must have one more argument than new()/,
     'test_and_do croaks with wrong argument count';
 
-$coderef = 'not code';
+throws_ok
+    { $cb->test_and_do( $x, $y, 'NOT A BOOLEAN', $coderef ) }
+    qr/[*]E[*] test_and_do invalid boolean value in 2nd-last argument: NOT A BOOLEAN/,
+    'test_and_do croaks when 2nd-last arg is not a 0 or 1';
 
 throws_ok
-    { $cb->test_and_do( $x, $y, eof, $coderef ) }
-    qr/[*]E[*] last argument of test_and_do must be a code reference/,
+    { $cb->test_and_do( $x, $y, 999, $coderef ) }
+    qr/[*]E[*] test_and_do invalid boolean value in 2nd-last argument: 999/,
+    'test_and_do croaks when 2nd-last arg is not a 0 or 1';
+
+throws_ok
+    { $cb->test_and_do( $x, $y, eof, 'NOT A CODEREF' ) }
+    qr/[*]E[*] test_and_do last argument must be a code reference/,
     'test_and_do croaks when last arg is not a code reference';
 
-throws_ok
-    { $cb->comparison( EOF => 'ZZZ' ) }
-    qr/[*]E[*] invalid comparison operator: ZZZ/,
-    'comparison croaks given an invalid operator';
-    
