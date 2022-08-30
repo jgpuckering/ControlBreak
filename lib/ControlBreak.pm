@@ -674,10 +674,11 @@ method test_and_do (@args) {
         unless @args == $_num_levels + 1;
 
     my $coderef = pop @args;
-    my $eod = 0 + $args[-1];
 
     croak '*E* last argument of test_and_do must be a code reference'
         unless ref $coderef eq 'CODE';
+
+    my $eod = 0 + $args[-1];
 
     for my $ii (0..$eod) {
         $args[-1] = $ii;
@@ -685,7 +686,8 @@ method test_and_do (@args) {
         $coderef->();
         $self->continue;
     }
-
+    
+    return $self->break;
 }
 
 ######################################################################
@@ -705,7 +707,7 @@ sub _op_to_func ($op) {
         $fcompare = $op;
     }
     else {
-        croak '*F* invalid comparison operator: ' . $op;
+        croak '*E* invalid comparison operator: ' . $op;
     }
 
     return $fcompare;
