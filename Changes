@@ -1,4 +1,16 @@
 Revision history for Perl module ControlBreak
 
-1.00      2022-08-27
+v0.22.243       2022-08-31
+  - new version number scheme
+  - better test coverage
+  - replaces v2022-08-30
+
+
+v2022.08.30     2022-08-30
+  - new version number scheme
+  - better test coverage
+  - CPAN version reset on 2022-08-31 12:22 EDT
+  - to be deleted once it's been replaced
+
+1.00            2022-08-27
   - First release to CPAN
