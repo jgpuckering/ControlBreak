@@ -337,7 +337,7 @@ method comparison (%h) {
     }
 }
 
-=head2 continue ()
+=head2 continue
 
 Saves the values most recently provided to the B<test()> method so
 they can be compared to new values on the next iteration.
