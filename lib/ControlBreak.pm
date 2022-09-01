@@ -1,7 +1,7 @@
 # ControlBreak.pm - Compare values during iteration to detect changes
 
 # Done:
-# - switch from using say join to using printf in the Synopsis example
+# - change to use v5.26 to align with Object::Pad 0.66 requirements and avoid test failures
 
 # To Do:
 # - provide an accumulate method that counts and sums an arbitrary number of named variables
@@ -118,7 +118,7 @@ place of B<test()> and B<continue()>.
 ########################################################################
 use strict;
 use warnings;
-use v5.18;
+use v5.26;      # minimum perl necessary for Object::Pad 0.66
 
 use Object::Pad 0.66 qw( :experimental(init_expr) );
 
