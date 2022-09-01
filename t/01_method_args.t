@@ -91,11 +91,12 @@ throws_ok
     qr/[*]E[*] invalid level number: 9/,
     'last(levelnum) croaks if levelnum is invalid';
 
-$cb = ControlBreak->new( '+L1_areacode', 'L2_country', '+EOF' );
+$cb = ControlBreak->new( '+L1_areacode', 'L2_country', '+EOD' );
 
 my $coderef = sub {};
 ($x, $y) = (605, 'y', 1);
-ok $cb->test_and_do( $x, $y, eof, $coderef ) == 3, 'test_and_do with correct arg count and eof';
+my $EOD = 1; # end of data signal
+ok $cb->test_and_do( $x, $y, $EOD, $coderef ) == 3, 'test_and_do with correct arg count and eod';
 
 throws_ok
     { $cb->test_and_do( $x, $y, $coderef ) }
@@ -113,7 +114,7 @@ throws_ok
     'test_and_do croaks when 2nd-last arg is not a 0 or 1';
 
 throws_ok
-    { $cb->test_and_do( $x, $y, eof, 'NOT A CODEREF' ) }
+    { $cb->test_and_do( $x, $y, $EOD, 'NOT A CODEREF' ) }
     qr/[*]E[*] test_and_do last argument must be a code reference/,
     'test_and_do croaks when last arg is not a code reference';
 
