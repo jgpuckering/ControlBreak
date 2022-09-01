@@ -1,5 +1,9 @@
 Revision history for Perl module ControlBreak
 
+v0.22.244       2022-09-01
+  - use v5.26 to align with Object::Pad 0.66
+  - eliminate call to perl eof in 01_method_args.t; probable source of Fails on GNU/Linux and FreeBSD
+
 v0.22.243       2022-08-31
   - new version number scheme
   - better test coverage
